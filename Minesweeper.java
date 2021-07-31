@@ -79,4 +79,4 @@ class Board{
 	}
 }
 
-//class GameFrame extends Frame{}
+class GameFrame extends Frame{}
