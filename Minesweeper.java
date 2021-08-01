@@ -2,24 +2,35 @@ import java.io.*;
 import java.util.Scanner;
 import java.util.Random;
 import java.awt.*;
+import java.awt.event.*;
+
+/*
+BOARD VALUES
+0 no mine
+1 mine
+2 no mine exposed
+3 flagged
+*/
 
 class Minesweeper{
 	public static void main(String[] args){
-		Board board = new Board();
+		Game game = new Game();
 	}
 }
 
-class Board{
+class Game{
 
 	int height;
 	int width;
 	int bombs;
-	int[][] board;
+	int[][] board, boardstate;
+	GameFrame gameFrame;
 	
-	public Board(){
+	public Game(){
 		initVals();
 		initBoard();
-		printBoard();
+		initGameBoard();
+		
 	}
 	
 	private void initVals(){
@@ -56,6 +67,7 @@ class Board{
 	private void initBoard(){
 		Random rand = new Random();
 		board = new int[height][width];
+		boardstate = new int[height][width];
 		for (int i = 0; i < bombs; i ++){
 			//populating the board with mines
 			//not efficient when bombs is close to boardsize
@@ -77,6 +89,84 @@ class Board{
 			System.out.println();
 		}
 	}
+	
+	private void initGameBoard(){
+		gameFrame = new GameFrame(this, board);
+	}
+	
+	public void spaceClicked(int y, int x, int mouseButton){
+		if (mouseButton == 1)
+			checkSpace(y, x);
+		if (mouseButton == 3)
+			flagSpace(y, x);
+	}
+	
+	private void checkSpace(int y, int x){
+		switch (board[y][x]){
+			case 0:
+				System.out.println("no bomb");
+				break;
+			case 1:
+				System.out.println("bomb");
+				break;
+			default:
+				System.out.println("something else");
+		}
+		return;
+	}
+	
+	private void flagSpace(int y, int x){
+		
+	}
 }
 
-class GameFrame extends Frame{}
+class GameFrame extends Frame{
+	Game game;
+	Button[][] spaces;
+	int height, width;
+	int[][] board;
+	
+	public GameFrame(Game game, int board[][]){
+		height = board.length;
+		width = board[0].length;
+		this.board = board;
+		this.game = game;
+		
+		initFrame();
+		initButtons();
+	}
+	
+	private void initFrame(){
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent we) {
+				dispose();
+				System.exit(0);
+			}
+		});
+		
+		setSize(100 + 25 * height, 100 + 25 * width);
+		setLayout(null);
+		setVisible(true);
+	}
+	
+	private void initButtons(){
+		spaces = new Button[height][width];
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j < width; j++){
+				final int y_coord = i;
+				final int x_coord = j;
+				spaces[i][j] = new Button();
+				spaces[i][j].setSize(23, 23);
+				spaces[i][j].setLocation(50 + i * 25, 50 + j * 25);
+				
+				spaces[i][j].addMouseListener(new MouseAdapter(){
+					public void mouseClicked(MouseEvent e){
+						game.spaceClicked(y_coord, x_coord, e.getButton());
+					}
+				});
+				add(spaces[i][j]);
+			}
+		}
+		validate();
+	}
+}
