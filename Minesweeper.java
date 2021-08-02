@@ -8,8 +8,11 @@ import java.awt.event.*;
 BOARD VALUES
 0 no mine
 1 mine
-2 no mine exposed
-3 flagged
+
+BOARDSTATE VALUES
+0 unchecked
+1 uncovered
+2 flagged
 */
 
 class Minesweeper{
@@ -23,7 +26,7 @@ class Game{
 	int height;
 	int width;
 	int bombs;
-	int[][] board, boardstate;
+	int[][] board, boardstate, neighboard;
 	GameFrame gameFrame;
 	
 	public Game(){
@@ -32,6 +35,8 @@ class Game{
 		initGameBoard();
 		
 	}
+	
+	//TODO sort out method order
 	
 	private void initVals(){
 		Scanner scan = new Scanner(System.in);
@@ -68,6 +73,7 @@ class Game{
 		Random rand = new Random();
 		board = new int[height][width];
 		boardstate = new int[height][width];
+		neighboard = new int[height][width];
 		for (int i = 0; i < bombs; i ++){
 			//populating the board with mines
 			//not efficient when bombs is close to boardsize
@@ -78,6 +84,12 @@ class Game{
 				mine_x = rand.nextInt(width);
 			}while (board[mine_y][mine_x] == 1);
 			board[mine_y][mine_x] = 1;
+		}
+		//populating the neighboard
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j < width; j++){
+				neighboard[i][j] = checkNeighbors(i, j);
+			}
 		}
 	}
 	
@@ -102,21 +114,55 @@ class Game{
 	}
 	
 	private void checkSpace(int y, int x){
-		switch (board[y][x]){
+		switch (boardstate[y][x]){
 			case 0:
-				System.out.println("no bomb");
-				break;
-			case 1:
-				System.out.println("bomb");
+				if (board[y][x] == 0){//no mine
+					boardstate[y][x] = 1;
+				}else{//mine
+					//blow up board
+					System.exit(0);
+				}
 				break;
 			default:
-				System.out.println("something else");
+				//do nothing
+				break;
 		}
+		gameFrame.updateButton(y, x, boardstate[y][x], neighboard[y][x]);
 		return;
 	}
 	
 	private void flagSpace(int y, int x){
-		
+		switch (boardstate[y][x]){
+			case 0: //unchecked
+				//flags space
+				boardstate[y][x] = 2;
+				break;
+			case 1: //checked
+				//do nothing
+				break;
+			case 2: //flagged
+				//unflags space
+				boardstate[y][x] = 0;
+				break;
+			default: //shouldn't happen
+				break;
+		}
+		gameFrame.updateButton(y, x, boardstate[y][x], neighboard[y][x]);
+		return;
+	}
+	
+	private int checkNeighbors(int y, int x){
+		int mines = 0;
+		for (int i = y - 1; i < y + 2; i++){
+			for (int j = x - 1; j < x + 2; j++){
+				if ((i < 0) || (i >= height) || (j < 0) || (j >= width))
+					continue;
+				if ((i == y) && (j == x))
+					continue;
+				mines += board[i][j];
+			}
+		}
+		return mines;
 	}
 }
 
@@ -144,7 +190,7 @@ class GameFrame extends Frame{
 			}
 		});
 		
-		setSize(100 + 25 * height, 100 + 25 * width);
+		setSize(100 + 25 * width, 100 + 25 * height);
 		setLayout(null);
 		setVisible(true);
 	}
@@ -157,7 +203,7 @@ class GameFrame extends Frame{
 				final int x_coord = j;
 				spaces[i][j] = new Button();
 				spaces[i][j].setSize(23, 23);
-				spaces[i][j].setLocation(50 + i * 25, 50 + j * 25);
+				spaces[i][j].setLocation(50 + j * 25, 50 + i * 25);
 				
 				spaces[i][j].addMouseListener(new MouseAdapter(){
 					public void mouseClicked(MouseEvent e){
@@ -168,5 +214,48 @@ class GameFrame extends Frame{
 			}
 		}
 		validate();
+	}
+	
+	public void updateAllButtons(int[][] boardstate, int[][] neighboard){
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j < width; j++){
+				switch (boardstate[i][j]){
+					case 0:
+						//covered
+						spaces[i][j].setLabel("");
+						break;
+					case 1:
+						//uncovered
+						spaces[i][j].setLabel(String.valueOf(neighboard[i][j]));
+						break;
+					case 2:
+						//flagged
+						spaces[i][j].setLabel("F");
+						break;
+					default:
+						//do nothing
+				}
+			}	
+		}
+		validate();
+	}
+	
+	public void updateButton(int y, int x, int state, int neighbors){
+		switch (state){
+			case 0:
+				//covered
+				spaces[y][x].setLabel("");
+				break;
+			case 1:
+				//uncovered
+				spaces[y][x].setLabel(String.valueOf(neighbors));
+				break;
+			case 2:
+				//flagged
+				spaces[y][x].setLabel("F");
+				break;
+			default:
+				//do nothing
+		}
 	}
 }
